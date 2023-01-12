@@ -1,0 +1,12 @@
+{
+    "brands": [
+        {
+            "brand": "Chloe",
+            "code": "CC",
+            "glasses_type": {
+                "sunglasses": true,
+                "eyeglasses": true
+            }
+        }
+    ]
+}
