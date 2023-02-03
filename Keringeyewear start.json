@@ -3,10 +3,7 @@
         {
             "brand": "Chloe",
             "code": "CC",
-            "glasses_type": {
-                "sunglasses": true,
-                "eyeglasses": true
-            }
+            "glasses_type": [ "Sunglasses", "Eyeglasses" ]
         }
     ]
 }
