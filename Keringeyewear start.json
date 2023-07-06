@@ -1,8 +1,8 @@
 {
     "brands": [
         {
-            "brand": "Chloe",
-            "code": "CC",
+            "brand": "Gucci",
+            "code": "GU",
             "glasses_type": [ "Sunglasses", "Eyeglasses" ]
         }
     ]
