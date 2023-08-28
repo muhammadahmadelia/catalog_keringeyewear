@@ -27,6 +27,9 @@ from openpyxl.drawing.image import Image as Imag
 from openpyxl.utils import get_column_letter
 from PIL import Image
 
+from selenium.webdriver.chrome.service import Service as ChromeService
+from webdriver_manager.chrome import ChromeDriverManager
+
 class myScrapingThread(threading.Thread):
     def __init__(self, threadID: int, name: str, obj, brand: str, glasses_type: str, product_number: str, product_url: str, headers: dict) -> None:
         threading.Thread.__init__(self)
@@ -61,7 +64,8 @@ class Keringeyewear_Scraper:
         self.chrome_options.add_argument("--start-maximized")
         self.chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
         self.args = ["hide_console", ]
-        self.browser = webdriver.Chrome(options=self.chrome_options, service_args=self.args)
+        # self.browser = webdriver.Chrome(options=self.chrome_options, service_args=self.args)
+        self.browser = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=self.chrome_options)
         pass
 
     def controller(self, store: Store, brands_with_types: list[dict]) -> None:
@@ -995,10 +999,10 @@ try:
     # get path of Exe folder
     path = pathofpyfolder.replace(pathofpyfolder.split('\\')[-1], '')
     # download chromedriver.exe with same version and get its path
-    if os.path.exists('chromedriver.exe'): os.remove('chromedriver.exe')
+    # if os.path.exists('chromedriver.exe'): os.remove('chromedriver.exe')
     if os.path.exists('Keringeyewear Results.xlsx'): os.remove('Keringeyewear Results.xlsx')
 
-    chromedriver_autoinstaller.install(path)
+    # chromedriver_autoinstaller.install(path)
     if '.exe' in pathofpyfolder.split('\\')[-1]: DEBUG = False
     
     f = open('Keringeyewear start.json')
