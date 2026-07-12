@@ -376,6 +376,7 @@ class Keringeyewear_Scraper:
                     'url': product.url, 
                     'metafields': [
                         { 'key': 'for_who', 'value': product.metafields.for_who },
+                        { 'key': 'collection', 'value': product.metafields.collection },
                         { 'key': 'product_size', 'value': product.metafields.product_size }, 
                         { 'key': 'lens_material', 'value': product.metafields.lens_material }, 
                         { 'key': 'lens_technology', 'value': product.metafields.lens_technology }, 
@@ -701,6 +702,18 @@ class Keringeyewear_Scraper:
                 else: sleep(0.15)
 
             try:
+                for div in soup.select('div[id="kering-product-characteristics"] > div[id="kering-product-characteristics-collapsable"] > div[class="col-sm-12 col-xs-12"]'):
+                    if str(div.select_one('span[class*="characteristics-title"]').text).strip().lower() == 'collection':
+                        for index, span in enumerate(div.find_all('span')):
+                            if index > 0:
+                                metafields.collection = f'{metafields.collection} {str(span.text).strip()}'
+                        metafields.collection = str(metafields.collection).strip()
+                        break
+            except Exception as e: 
+                if self.DEBUG: print(f'Exception in metafields.collection: {e}')
+                else: sleep(0.15)
+
+            try:
                 for div in soup.select('div[id="kering-product-characteristics"] > div[id="kering-product-characteristics-collapsable"] > div[class="col-sm-6 col-xs-12"]'):
                     if str(div.select_one('span[class*="characteristics-title"]').text).strip().lower() == 'temple main':
                         metafields.frame_material = str(div.find_all('span')[1].text).strip().title()
@@ -842,6 +855,7 @@ def read_data_from_json_file(DEBUG, result_filename: str):
 
             for json_d in json_data:
                 number, frame_code, brand, img_url, frame_color, lens_color= '', '', '', '', '', ''
+                collection = ''
                 # product = Product()
                 brand = json_d['brand']
                 number = str(json_d['number']).strip().upper()
@@ -869,6 +883,7 @@ def read_data_from_json_file(DEBUG, result_filename: str):
                     # elif json_metafiels['key'] == 'frame_material':metafields.frame_material = str(json_metafiels['value']).strip().title()
                     # elif json_metafiels['key'] == 'frame_shape':metafields.frame_shape = str(json_metafiels['value']).strip().title()
                     # elif json_metafiels['key'] == 'gtin1':metafields.gtin1 = str(json_metafiels['value']).strip().title()
+                    collection = str(json_metafiels['value']).strip().title() if json_metafiels['key'] == 'collection' else collection
                     if json_metafiels['key'] == 'img_url':img_url = str(json_metafiels['value']).strip()
                     # elif json_metafiels['key'] == 'img_360_urls':
                     #     value = str(json_metafiels['value']).strip()
@@ -897,7 +912,7 @@ def read_data_from_json_file(DEBUG, result_filename: str):
                     if image_attachment:
                         with open(f'Images/{sku}.jpg', 'wb') as f: f.write(image_attachment)
                         crop_downloaded_image(f'Images/{sku}.jpg')
-                    data.append([number, frame_code, frame_color, lens_color, brand, glasses_type, sku, wholesale_price, listing_price])
+                    data.append([number, frame_code, frame_color, lens_color, brand, glasses_type, sku, wholesale_price, listing_price, collection])
     except Exception as e:
         if DEBUG: print(f'Exception in read_data_from_json_file: {e}')
         else: pass
@@ -965,11 +980,11 @@ def saving_picture_in_excel(data: list):
     worksheet.cell(row=1, column=4, value='Color Lens')
     worksheet.cell(row=1, column=5, value='Brand')
     worksheet.cell(row=1, column=6, value='Glasses Type')
-    
     worksheet.cell(row=1, column=7, value='SKU')
     worksheet.cell(row=1, column=8, value='Wholesale Price')
     worksheet.cell(row=1, column=9, value='Listing Price')
-    worksheet.cell(row=1, column=10, value="Image")
+    worksheet.cell(row=1, column=10, value='Collection')
+    worksheet.cell(row=1, column=11, value="Image")
 
     for index, d in enumerate(data):
         new_index = index + 2
@@ -983,14 +998,15 @@ def saving_picture_in_excel(data: list):
         worksheet.cell(row=new_index, column=7, value=d[6])
         worksheet.cell(row=new_index, column=8, value=d[7])
         worksheet.cell(row=new_index, column=9, value=d[8])
+        worksheet.cell(row=new_index, column=10, value=d[9])
 
-        image = f'Images/{d[-3]}.jpg'
+        image = f'Images/{d[6]}.jpg'
         if os.path.exists(image):
             im = Image.open(image)
             width, height = im.size
             worksheet.row_dimensions[new_index].height = height
-            worksheet.add_image(Imag(image), anchor='J'+str(new_index))
-            # col_letter = get_column_letter(9)
+            worksheet.add_image(Imag(image), anchor='K'+str(new_index))
+            # col_letter = get_column_letter(10)
             # worksheet.column_dimensions[col_letter].width = width
         # print(index, image)
 

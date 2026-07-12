@@ -3,6 +3,7 @@ class Metafields:
         self.__id = 0
         self.__product_id = 0
         self.__for_who = ''
+        self.__collection = ''
         self.__product_size = ''
         self.__activity = ''
         self.__lens_material = ''
@@ -39,6 +40,14 @@ class Metafields:
     @for_who.setter
     def for_who(self, for_who: str):
         self.__for_who = for_who
+
+    @property
+    def collection(self) -> str:
+        return self.__collection
+
+    @collection.setter
+    def collection(self, collection: str):
+        self.__collection = collection
     
     @property
     def product_size(self) -> str:
