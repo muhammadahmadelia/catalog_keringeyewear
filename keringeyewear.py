@@ -727,12 +727,18 @@ class Keringeyewear_Scraper:
                 else: sleep(0.15)
 
             try:
-                img_tag = soup.select_one('div > img[class="lazyOwl"]')
-                metafields.img_url = img_tag.get('src') if img_tag else ''
+                img_src = soup.select('div[class*="itemModal"] > img[loading="eager"]')
+                # self.print_logs(f'img_src: {len(img_src)}')
+                # if img_src:
+                #     img_src = img_src.get('src')
+                for img in img_src:
+                    metafields.img_url = img.get('src')
+                    break
+                # product.image = img_src if img_src else ''
                 if 'missing_product_EN_512x512.png' in metafields.img_url: metafields.img_url = ''
+                # self.print_logs(metafields.img_url)
             except Exception as e: 
-                if self.DEBUG: print(f'Exception in metafields.img_url: {e}')
-                else: sleep(0.15)
+                self.print_logs(f'Exception in metafields.img_url: {e}')
 
 
             # if metafields.img_url:
