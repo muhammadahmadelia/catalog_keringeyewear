@@ -23,7 +23,7 @@ import requests
 from unidecode import unidecode
 
 from openpyxl import Workbook
-from openpyxl.drawing.image import Image as Imag
+from openpyxl.drawing.image import Image as XLImage
 from openpyxl.utils import get_column_letter
 from PIL import Image
 
@@ -728,6 +728,7 @@ class Keringeyewear_Scraper:
 
             try:
                 img_src = soup.select('div[class*="itemModal"] > img[loading="eager"]')
+                # img_src = soup.select('div[style="width: 512px;"] > img[loading="eager"]')
                 # self.print_logs(f'img_src: {len(img_src)}')
                 # if img_src:
                 #     img_src = img_src.get('src')
@@ -850,6 +851,14 @@ class Keringeyewear_Scraper:
                 break
             else: sleep(1)
 
+
+# print logs to the log file
+def print_logs(logs_filename: str, log: str) -> None:
+    try:
+        with open(logs_filename, 'a') as f:
+            f.write(f'\n{log}')
+    except: pass
+
 def read_data_from_json_file(DEBUG, result_filename: str):
     data = []
     try:
@@ -862,6 +871,7 @@ def read_data_from_json_file(DEBUG, result_filename: str):
             for json_d in json_data:
                 number, frame_code, brand, img_url, frame_color, lens_color= '', '', '', '', '', ''
                 collection = ''
+                product_id = json_d['number'] + '_' + json_d['frame_code']
                 # product = Product()
                 brand = json_d['brand']
                 number = str(json_d['number']).strip().upper()
@@ -877,6 +887,8 @@ def read_data_from_json_file(DEBUG, result_filename: str):
                 # product.url = str(json_d['url']).strip()
                 # metafields = Metafields()
                 glasses_type = str(json_d['type']).strip().title()
+
+                
                 
                 for json_metafiels in json_d['metafields']:
                     # if json_metafiels['key'] == 'for_who':metafields.for_who = str(json_metafiels['value']).strip().title()
@@ -899,6 +911,9 @@ def read_data_from_json_file(DEBUG, result_filename: str):
                     #     for v in value.split(','):
                     #         metafields.img_360_urls = str(v).strip()
                 # product.metafields = metafields
+                # if img_url and not glob.glob(f'Images/{product_id}.*'):
+                if img_url:
+                    download_image(img_url, logs_filename, product_id)
                 for json_variant in json_d['variants']:
                     sku, price = '', ''
                     # variant = Variant()
@@ -914,47 +929,74 @@ def read_data_from_json_file(DEBUG, result_filename: str):
                     # variant.size = str(json_variant['size']).strip()
                     # variant.weight = str(json_variant['weight']).strip()
                     # product.variants = variant
-                    image_attachment = download_image(img_url)
-                    if image_attachment:
-                        with open(f'Images/{sku}.jpg', 'wb') as f: f.write(image_attachment)
-                        crop_downloaded_image(f'Images/{sku}.jpg')
-                    data.append([number, frame_code, frame_color, lens_color, brand, glasses_type, sku, wholesale_price, listing_price, collection])
+                    
+                    # if image_attachment:
+                    #     with open(f'Images/{sku}.jpg', 'wb') as f: f.write(image_attachment)
+                    #     crop_downloaded_image(f'Images/{sku}.jpg')
+                    data.append([number, frame_code, frame_color, lens_color, brand, glasses_type, sku, wholesale_price, listing_price, collection, product_id])
     except Exception as e:
         if DEBUG: print(f'Exception in read_data_from_json_file: {e}')
         else: pass
     finally: return data
 
-def download_image(url):
-    image_attachment = ''
-    try:
-        headers = {
-            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-            'accept-Encoding': 'gzip, deflate, br',
-            'accept-Language': 'en-US,en;q=0.9',
-            'cache-Control': 'max-age=0',
-            'sec-ch-ua': '"Google Chrome";v="95", "Chromium";v="95", ";Not A Brand";v="99"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
-            'sec-fetch-dest': 'document',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-site': 'none',
-            'Sec-Fetch-User': '?1',
-            'upgrade-insecure-requests': '1',
-        }
-        counter = 0
-        while True:
-            try:
-                response = requests.get(url=url, headers=headers, timeout=20)
-                if response.status_code == 200:
-                    # image_attachment = base64.b64encode(response.content)
-                    image_attachment = response.content
-                    break
-                else: print(f'{response.status_code} found for url: {url}')
-            except: sleep(0.3)
-            counter += 1
-            if counter == 10: break
-    except Exception as e: print(f'Exception in download_image: {str(e)}')
-    finally: return image_attachment
+def download_image(url: str, logs_filename: str, product_id: str):
+    headers = {
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'accept-language': 'en-US,en;q=0.9',
+        'cache-control': 'max-age=0',
+        'priority': 'u=0, i',
+        'sec-ch-ua': '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-site': 'none',
+        'sec-fetch-user': '?1',
+        'upgrade-insecure-requests': '1',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36',
+    }
+    counter = 0
+    while True:
+        try:
+            response = requests.get(url=url, headers=headers, timeout=30)
+            response.raise_for_status()
+
+            content_type = response.headers.get("Content-Type", "").split(";")[0].lower()
+
+            extensions = {
+                "image/jpeg": ".jpg",
+                "image/png": ".png",
+                "image/avif": ".avif",
+                "image/webp": ".webp",
+                "image/gif": ".gif",
+                "image/bmp": ".bmp",
+                "image/tiff": ".tiff",
+                "image/svg+xml": ".svg",
+            }
+
+            extension = extensions.get(content_type)
+
+            if not extension:
+                raise ValueError(f"Unsupported image type: {content_type}")
+            filename = f'Images/{product_id}{extension}'
+            with open(filename, "wb") as f:
+                f.write(response.content)
+
+            
+            if os.path.exists(filename) and '.avif' in filename:
+                im = Image.open(filename)
+                im.save(str(filename).replace('.avif', '.png'), "PNG")
+                os.remove(filename)
+        
+            break
+        except requests.exceptions.HTTPError as e:
+            print_logs(logs_filename, f'Exception in download_image for image downloading: {e}, URL: {url}')
+            break
+        except Exception as e:
+            print_logs(logs_filename, f'Exception in download_image: {e}')
+            sleep(0.3)
+        counter += 1
+        if counter == 10: break
 
 def crop_downloaded_image(filename):
     try:
@@ -1006,12 +1048,35 @@ def saving_picture_in_excel(data: list):
         worksheet.cell(row=new_index, column=9, value=d[8])
         worksheet.cell(row=new_index, column=10, value=d[9])
 
-        image = f'Images/{d[6]}.jpg'
-        if os.path.exists(image):
-            im = Image.open(image)
-            width, height = im.size
-            worksheet.row_dimensions[new_index].height = height
-            worksheet.add_image(Imag(image), anchor='K'+str(new_index))
+        result = glob.glob(f'Images/{d[-1]}.*')
+        if result:
+            image = str(result[0]).replace('\\', '/')
+            if image:
+                xl_image = XLImage(image)
+                max_width = 200  # Set the maximum width for the image
+                max_height = 200  # Set the maximum height for the image
+
+                ration = min(
+                    max_width / xl_image.width,
+                    max_height / xl_image.height,
+                    1  # Ensure the image is not scaled up
+                )
+
+                xl_image.width = int(xl_image.width * ration)
+                xl_image.height = int(xl_image.height * ration)
+                worksheet.row_dimensions[new_index].height = xl_image.height * 0.75  # Adjust row height based on image height
+                worksheet.add_image(xl_image, anchor='K'+str(new_index))
+
+                # im = Image.open(image)
+                # width, height = im.size
+                # worksheet.row_dimensions[new_index].height = height
+                # worksheet.add_image(Imag(image), anchor='K'+str(new_index))
+        # # image = f'Images/{d[-1]'
+        # if os.path.exists(image):
+        #     im = Image.open(image)
+        #     width, height = im.size
+        #     worksheet.row_dimensions[new_index].height = height
+        #     worksheet.add_image(Imag(image), anchor='K'+str(new_index))
             # col_letter = get_column_letter(10)
             # worksheet.column_dimensions[col_letter].width = width
         # print(index, image)
